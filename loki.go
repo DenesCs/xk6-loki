@@ -139,9 +139,12 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		common.Throw(rt, fmt.Errorf("Config constructor expects map of string to integers as forth argument"))
 	}
 
+	basicAuthUser := c.Argument(4).String()
+	basicAuthPassword := c.Argument(5).String()
+
 	var labels LabelPool
-	if err := rt.ExportTo(c.Argument(4), &labels); err != nil {
-		common.Throw(rt, fmt.Errorf("Config constructor expects Labels as fifth argument"))
+	if err := rt.ExportTo(c.Argument(6), &labels); err != nil {
+		common.Throw(rt, fmt.Errorf("Config constructor expects Labels as seventh argument"))
 	}
 
 	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v", urlString, timeoutMs, protobufRatio, cardinalities))
@@ -169,12 +172,14 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	}
 
 	config := &Config{
-		URL:           *u,
-		UserAgent:     DefaultUserAgent,
-		TenantID:      u.User.Username(),
-		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
-		Labels:        labels,
-		ProtobufRatio: protobufRatio,
+		URL:               *u,
+		UserAgent:         DefaultUserAgent,
+		TenantID:          u.User.Username(),
+		Timeout:           time.Duration(timeoutMs) * time.Millisecond,
+		Labels:            labels,
+		ProtobufRatio:     protobufRatio,
+		BasicAuthUser:     basicAuthUser,
+		BasicAuthPassword: basicAuthPassword,
 	}
 
 	return rt.ToValue(config).ToObject(rt)

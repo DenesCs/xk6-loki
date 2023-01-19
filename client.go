@@ -2,6 +2,7 @@ package loki
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -37,12 +38,14 @@ type Client struct {
 }
 
 type Config struct {
-	URL           url.URL
-	UserAgent     string
-	Timeout       time.Duration
-	TenantID      string
-	Labels        LabelPool
-	ProtobufRatio float64
+	URL               url.URL
+	UserAgent         string
+	Timeout           time.Duration
+	TenantID          string
+	Labels            LabelPool
+	ProtobufRatio     float64
+	BasicAuthUser     string
+	BasicAuthPassword string
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {
@@ -274,6 +277,11 @@ func (c *Client) pushBatch(batch *Batch) (httpext.Response, error) {
 	return res, err
 }
 
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
 func (c *Client) send(state *lib.State, buf []byte, useProtobuf bool) (httpext.Response, error) {
 	httpResp := httpext.NewResponse()
 	path := "/loki/api/v1/push"
@@ -294,6 +302,10 @@ func (c *Client) send(state *lib.State, buf []byte, useProtobuf bool) (httpext.R
 		r.Header.Add("Content-Encoding", ContentEncodingSnappy)
 	} else {
 		r.Header.Set("Content-Type", ContentTypeJSON)
+	}
+
+	if c.cfg.BasicAuthUser != "" {
+		r.Header.Add("Authorization", "Basic "+basicAuth(c.cfg.BasicAuthUser, c.cfg.BasicAuthPassword))
 	}
 
 	url, _ := httpext.NewURL(c.cfg.URL.String()+path, path)
