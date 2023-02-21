@@ -1,4 +1,4 @@
-module github.com/grafana/xk6-loki
+module github.com/DenesCs/xk6-loki
 
 go 1.16
 
